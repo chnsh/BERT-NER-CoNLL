@@ -22,5 +22,6 @@ To reproduce:
 ```
 
 Credits:
+Google Colab was used to build this - this repo is just the cleaner version. The original notebook is [here](https://colab.research.google.com/drive/1tX6Le-MQoSI6dYDPQIzl7Jl1SOD3706V)
 
 Key ideas to get this working are due to [this github issue/comment](https://github.com/huggingface/transformers/issues/64#issuecomment-443703063).

@@ -16,6 +16,20 @@ micro avg       0.95      0.96      0.95      5936
 macro avg       0.95      0.96      0.95      5936
 ```
 
+On the `test` set:
+```
+           precision    recall  f1-score   support
+
+      PER       0.96      0.95      0.96      1615
+      LOC       0.92      0.93      0.93      1666
+     MISC       0.80      0.83      0.82       702
+      ORG       0.88      0.91      0.89      1661
+
+micro avg       0.91      0.92      0.91      5644
+macro avg       0.91      0.92      0.91      5644
+
+```
+
 To reproduce:
 ```
  python train.py --batch_size 32 --lr 3e-5 --n_epochs 5 --train

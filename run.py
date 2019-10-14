@@ -28,7 +28,7 @@ def train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs):
         for step, batch in enumerate(tqdm(train_iter)):
             # add batch to gpu
             batch = tuple(t.to(device) for t in batch)
-            b_input_ids, b_input_mask, b_labels, b_token_type_ids, b_label_masks = batch
+            b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks = batch
             # forward pass
             loss, logits, labels = model(b_input_ids, token_type_ids=b_token_type_ids,
                                          attention_mask=b_input_mask, labels=b_labels,

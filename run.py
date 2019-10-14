@@ -110,6 +110,7 @@ if __name__ == '__main__':
     parser.add_argument("--max_len", type=int, default=128)
     parser.add_argument("--pretrained_model_name", type=str, default="bert-base-cased")
     parser.add_argument("--train", dest="train", action="store_true")
+    parser.add_argument("--existing_model_path", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -156,6 +157,10 @@ if __name__ == '__main__':
 
     model = CoNLLClassifier.from_pretrained(args.pretrained_model_name,
                                             num_labels=len(label_map)).to(device)
+
+    if args.existing_model_path is not None:
+        logger.info("Loading model from {}".format(args.existing_model_path))
+        model.load_state_dict(torch.load(args.existing_model_path))
 
     num_train_optimization_steps = int(len(train_examples) / args.batch_size) * num_epochs
 

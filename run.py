@@ -58,7 +58,7 @@ def eval(iter_data, model):
     for batch in tqdm(iter_data):
         batch = tuple(t.to(device) for t in batch)
 
-        b_input_ids, b_input_mask, b_labels, b_token_type_ids, b_label_masks = batch
+        b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks = batch
 
         with torch.no_grad():
             tmp_eval_loss, logits, reduced_labels = model(b_input_ids,

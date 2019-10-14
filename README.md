@@ -18,7 +18,7 @@ macro avg       0.95      0.96      0.95      5936
 
 To reproduce:
 ```
- python train.py --batch_size 32 --lr 3e-5 --n_epochs 5
+ python train.py --batch_size 32 --lr 3e-5 --n_epochs 5 --train
 ```
 
 Credits:

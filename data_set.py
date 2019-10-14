@@ -192,5 +192,5 @@ class NERDataSet(data.Dataset):
         assert len(input_ids) == len(label_ids) == len(attention_mask) == len(sentence_id) == len(
             label_mask) == self.max_len, len(input_ids)
         # return word_tokens, label_list,
-        return torch.from_numpy(input_ids), torch.from_numpy(label_ids), torch.from_numpy(
-            attention_mask), torch.from_numpy(sentence_id), torch.from_numpy(label_mask)
+        return torch.LongTensor(input_ids), torch.LongTensor(label_ids), torch.LongTensor(
+            attention_mask), torch.LongTensor(sentence_id), torch.LongTensor(label_mask)

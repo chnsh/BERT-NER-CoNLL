@@ -47,6 +47,7 @@ def train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs):
 
 
 def eval(iter_data, model):
+    logger.info("starting to evaluate")
     model = model.eval()
     eval_loss, eval_accuracy = 0, 0
     nb_eval_steps = 0

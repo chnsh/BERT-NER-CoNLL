@@ -104,13 +104,14 @@ if __name__ == '__main__':
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--n_epochs", type=int, default=5)
     parser.add_argument("--max_len", type=int, default=128)
+    parser.add_argument("--pretrained_model_name", type=str, default="bert-base-cased")
     parser.add_argument("--train", dest="train", action="store_true")
 
     args = parser.parse_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+    tokenizer = BertTokenizer.from_pretrained(args.pretrained_model_name)
 
     ner_processor = NerProcessor()
 
@@ -149,7 +150,8 @@ if __name__ == '__main__':
 
     num_epochs = args.n_epochs
 
-    model = CoNLLClassifier.from_pretrained("bert-base-cased", num_labels=len(label_map)).to(device)
+    model = CoNLLClassifier.from_pretrained(args.pretrained_model_name,
+                                            num_labels=len(label_map)).to(device)
 
     num_train_optimization_steps = int(len(train_examples) / args.batch_size) * num_epochs
 

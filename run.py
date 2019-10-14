@@ -74,10 +74,10 @@ def eval(iter_data, model):
         labels_to_append = []
         predictions_to_append = []
 
-        for prediction, label in zip(logits, reduced_labels):
+        for prediction, r_label in zip(logits, reduced_labels):
             preds = []
             labels = []
-            for pred, lab in zip(prediction, label):
+            for pred, lab in zip(prediction, r_label):
                 if lab.item() == -1:  # masked label; -1 means do not collect this label
                     continue
                 preds.append(pred)

@@ -193,4 +193,4 @@ class NERDataSet(data.Dataset):
             label_mask) == self.max_len, len(input_ids)
         # return word_tokens, label_list,
         return torch.LongTensor(input_ids), torch.LongTensor(label_ids), torch.LongTensor(
-            attention_mask), torch.LongTensor(sentence_id), torch.LongTensor(label_mask)
+            attention_mask), torch.LongTensor(sentence_id), torch.BoolTensor(label_mask)

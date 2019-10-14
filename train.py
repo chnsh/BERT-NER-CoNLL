@@ -104,6 +104,7 @@ if __name__ == '__main__':
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--n_epochs", type=int, default=5)
     parser.add_argument("--max_len", type=int, default=128)
+    parser.add_argument("--train", dest="train", action="store_true")
 
     args = parser.parse_args()
 
@@ -141,6 +142,11 @@ if __name__ == '__main__':
                                 shuffle=False,
                                 num_workers=4)
 
+    test_iter = data.DataLoader(dataset=test_dataset,
+                                batch_size=args.batch_size,
+                                shuffle=False,
+                                num_workers=4)
+
     num_epochs = args.n_epochs
 
     model = CoNLLClassifier.from_pretrained("bert-base-cased", num_labels=len(label_map)).to(device)
@@ -169,5 +175,7 @@ if __name__ == '__main__':
     scheduler = WarmupLinearSchedule(optimizer, warmup_steps=warmup_steps,
                                      t_total=num_train_optimization_steps)
 
-    train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs)
-
+    if args.train:
+        train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs)
+        logger.info("--Starting test evaluation now!---")
+        eval(test_iter, model)

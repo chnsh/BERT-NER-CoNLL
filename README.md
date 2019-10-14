@@ -20,3 +20,7 @@ To reproduce:
 ```
  python train.py --batch_size 32 --lr 3e-5 --n_epochs 5
 ```
+
+Credits:
+
+Key ideas to get this working are due to [this github issue/comment](https://github.com/huggingface/transformers/issues/64#issuecomment-443703063).

@@ -178,4 +178,5 @@ if __name__ == '__main__':
     if args.train:
         train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs)
         logger.info("--Starting test evaluation now!---")
+        torch.save(model.state_dict(), 'model.torch')
         eval(test_iter, model)

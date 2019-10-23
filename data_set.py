@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import torch
 from torch.utils import data
 
@@ -118,11 +119,12 @@ class NerProcessor(DataProcessor):
 
 
 class NERDataSet(data.Dataset):
-    def __init__(self, data_list, tokenizer, label_map, max_len):
+    def __init__(self, data_list, tokenizer, label_map, max_len, masked_lm_transform):
         self.max_len = max_len
         self.label_map = label_map
         self.data_list = data_list
         self.tokenizer = tokenizer
+        self.masked_lm_transform = masked_lm_transform
 
     def __len__(self):
         return len(self.data_list)
@@ -191,6 +193,36 @@ class NERDataSet(data.Dataset):
         assert len(word_tokens) == len(label_list)
         assert len(input_ids) == len(label_ids) == len(attention_mask) == len(sentence_id) == len(
             label_mask) == self.max_len, len(input_ids)
+
         # return word_tokens, label_list,
-        return torch.LongTensor(input_ids), torch.LongTensor(label_ids), torch.LongTensor(
-            attention_mask), torch.LongTensor(sentence_id), torch.BoolTensor(label_mask)
+        input_ids = torch.LongTensor(input_ids)
+        label_ids = torch.LongTensor(label_ids)
+        attention_mask = torch.LongTensor(attention_mask)
+        sentence_id = torch.LongTensor(sentence_id)
+        label_mask = torch.BoolTensor(label_mask)
+
+        masked_input_ids, masked_lm_labels = self.masked_lm_transform(input_ids, label_ids)
+
+        return input_ids, label_ids, attention_mask, sentence_id, label_mask, masked_input_ids, \
+               masked_lm_labels
+
+
+class MaskingTransformer:
+    def __init__(self, label_map, tokenizer, candidate_masking_label=("B-PER", "I-PER")):
+        self.label_map = label_map
+        self.tokenizer = tokenizer
+        self.candidate_masking_label = candidate_masking_label
+
+    def __call__(self, inputs, labels):
+        masking_indices = np.array(
+            [labels.numpy() == self.label_map[cat] for cat in self.candidate_masking_label]).any(
+            axis=0)
+
+        masking_indices = torch.Tensor(masking_indices)
+
+        masked_lm_labels = inputs.clone()
+
+        inputs[masking_indices] = self.tokenizer.mask_token
+        masked_lm_labels[~masking_indices] = -1
+
+        return inputs, masked_lm_labels

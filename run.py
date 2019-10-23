@@ -8,7 +8,7 @@ from torch.utils import data
 from tqdm import trange, tqdm
 from transformers import BertTokenizer, AdamW, WarmupLinearSchedule
 
-from data_set import NerProcessor, NERDataSet
+from data_set import NerProcessor, NERDataSet, MaskingTransformer
 from model import CoNLLClassifier
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -130,14 +130,16 @@ if __name__ == '__main__':
     for (i, label) in enumerate(tags_vals):
         label_map[label] = i
 
+    masking_transformer = MaskingTransformer(label_map, tokenizer)
+
     train_dataset = NERDataSet(data_list=train_examples, tokenizer=tokenizer, label_map=label_map,
-                               max_len=128)
+                               max_len=128, masked_lm_transform=masking_transformer)
 
     eval_dataset = NERDataSet(data_list=val_examples, tokenizer=tokenizer, label_map=label_map,
-                              max_len=128)
+                              max_len=128, masked_lm_transform=masking_transformer)
 
     test_dataset = NERDataSet(data_list=test_examples, tokenizer=tokenizer, label_map=label_map,
-                              max_len=128)
+                              max_len=128, masked_lm_transform=masking_transformer)
 
     train_iter = data.DataLoader(dataset=train_dataset,
                                  batch_size=args.batch_size,

@@ -1,11 +1,19 @@
+from torch import nn
 from torch.nn import CrossEntropyLoss
 from torch.nn.utils.rnn import pad_sequence
 from transformers import BertForTokenClassification
 
 
 class CoNLLClassifier(BertForTokenClassification):
+    def __init__(self, config, vocab_size, label_map, disentangled_labels=("B-PER", "I-PER"), dim_size=300):
+        super().__init__(config)
+        self.label_map = label_map
+        self.disentangled_labels = disentangled_labels
+        self.embedding = nn.Embedding(vocab_size, dim_size)
+
     def forward(self, input_ids, attention_mask=None, token_type_ids=None,
-                position_ids=None, head_mask=None, labels=None, label_masks=None):
+                position_ids=None, head_mask=None, labels=None, label_masks=None, masked_input_ids=None,
+                masked_lm_labels=None):
         outputs = self.bert(input_ids,
                             attention_mask=attention_mask,
                             token_type_ids=token_type_ids,

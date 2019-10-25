@@ -28,11 +28,13 @@ def train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs):
         for step, batch in enumerate(tqdm(train_iter)):
             # add batch to gpu
             batch = tuple(t.to(device) for t in batch)
-            b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks, _, _ = batch
+            b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks, b_masked_input_ids, \
+            b_masked_lm_labels = batch
             # forward pass
             loss, logits, labels = model(b_input_ids, token_type_ids=b_token_type_ids,
                                          attention_mask=b_input_mask, labels=b_labels,
-                                         label_masks=b_label_masks)
+                                         label_masks=b_label_masks, masked_input_ids=b_masked_input_ids,
+                                         masked_lm_labels=b_masked_lm_labels)
             # backward pass
             loss.backward()
             # track train loss
@@ -58,14 +60,17 @@ def eval(iter_data, model):
     for batch in tqdm(iter_data):
         batch = tuple(t.to(device) for t in batch)
 
-        b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks, _, _ = batch
+        b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks, b_masked_input_ids, \
+        b_masked_lm_labels = batch
 
         with torch.no_grad():
             tmp_eval_loss, logits, reduced_labels = model(b_input_ids,
                                                           token_type_ids=b_token_type_ids,
                                                           attention_mask=b_input_mask,
                                                           labels=b_labels,
-                                                          label_masks=b_label_masks)
+                                                          label_masks=b_label_masks,
+                                                          masked_input_ids=b_masked_input_ids,
+                                                          masked_lm_labels=b_masked_lm_labels)
 
         logits = torch.argmax(F.log_softmax(logits, dim=2), dim=2)
         logits = logits.detach().cpu().numpy()

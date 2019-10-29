@@ -163,7 +163,9 @@ if __name__ == '__main__':
     num_epochs = args.n_epochs
 
     model = CoNLLClassifier.from_pretrained(args.pretrained_model_name,
-                                            num_labels=len(label_map)).to(device)
+                                            num_labels=len(label_map),
+                                            embedding_vocab_size=tokenizer.vocab_size,
+                                            label_map=label_map).to(device)
 
     if args.existing_model_path is not None:
         logger.info("Loading model from {}".format(args.existing_model_path))

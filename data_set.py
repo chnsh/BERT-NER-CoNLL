@@ -203,6 +203,8 @@ class NERDataSet(data.Dataset):
 
         masked_input_ids, masked_lm_labels = self.masked_lm_transform(input_ids, label_ids)
 
+        label_mask = masked_lm_labels != -1
+
         return input_ids, label_ids, attention_mask, sentence_id, label_mask, masked_input_ids, \
                masked_lm_labels
 
@@ -218,11 +220,11 @@ class MaskingTransformer:
             [labels.numpy() == self.label_map[cat] for cat in self.candidate_masking_label]).any(
             axis=0)
 
-        masking_indices = torch.Tensor(masking_indices)
+        masking_indices = torch.BoolTensor(masking_indices)
 
         masked_lm_labels = inputs.clone()
 
-        inputs[masking_indices] = self.tokenizer.mask_token
+        inputs[masking_indices] = self.tokenizer.convert_tokens_to_ids(self.tokenizer.mask_token)
         masked_lm_labels[~masking_indices] = -1
 
         return inputs, masked_lm_labels

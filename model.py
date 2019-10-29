@@ -6,19 +6,22 @@ from transformers import BertForMaskedLM
 
 
 class CoNLLClassifier(BertForMaskedLM):
-    def __init__(self, config, vocab_size, label_map, disentangled_labels=("B-PER", "I-PER"), dim_size=300):
+    def __init__(self, config, embedding_vocab_size, label_map, disentangled_labels=("B-PER", "I-PER"), dim_size=300):
         super().__init__(config)
+        self.config = config
         self.label_map = label_map
         self.disentangled_labels = disentangled_labels
-        self.embedding = nn.Embedding(vocab_size, dim_size)
+        self.embedding = nn.Embedding(embedding_vocab_size, dim_size)
 
         self.context_mlp = nn.Linear(config.hidden_size, config.num_labels)
 
-        self.token_mlp = nn.Linear(config.dim_size, config.num_labels)
+        self.token_mlp = nn.Linear(dim_size, config.num_labels)
 
-        self.token_and_context_mlp = nn.Linear(config.dim_size + config.hidden_size, config.num_labels)
+        self.token_and_context_mlp = nn.Linear(dim_size + config.hidden_size, config.num_labels)
 
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+        self.linear_combination_weights = nn.Linear(3, 1, bias=False)
 
         self.init_weights()
 
@@ -40,22 +43,33 @@ class CoNLLClassifier(BertForMaskedLM):
 
         context_logits = self.context_mlp(sequence_output)  # (b, local_max_len, num_labels)
 
-        embeddings = self.embedding(input_ids)  # (b, dim_size)
+        embeddings = [embedding[mask] for mask, embedding in
+                      zip(label_masks, self.embedding(input_ids))]  # (b, local_max_len, dim_size)
 
-        token_logits = self.token_mlp(embeddings)
+        embeddings = pad_sequence(sequences=embeddings, batch_first=True,
+                                  padding_value=-1)
+
+        token_logits = self.token_mlp(embeddings)  # (b, MAX_LEN, num_labels)
 
         token_and_context = torch.cat((bert_sequence_reprs, embeddings), dim=-1)
 
         token_and_context_logits = self.token_and_context_mlp(token_and_context)
 
-        # outputs = (logits,)
-        # if labels is not None:
-        #     labels = [label[mask] for mask, label in zip(label_masks, labels)]
-        #     labels = pad_sequence(labels, batch_first=True, padding_value=-1)  # (b, local_max_len)
-        #     loss_fct = CrossEntropyLoss(ignore_index=-1, reduction='sum')
-        #     mask = labels != -1
-        #     loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-        #     loss /= mask.float().sum()
-        #     outputs = (loss,) + outputs + (labels,)
-        #
-        # return outputs  # (loss), scores, (hidden_states), (attentions)
+        b, local_max_len, num_labels = token_and_context_logits.size()
+
+        stacked_tensors = torch.stack((context_logits, token_logits, token_and_context_logits))
+
+        # todo: check if this is right
+        logits = self.linear_combination_weights(stacked_tensors.view(3, -1).t()).view(b, local_max_len, num_labels)
+
+        outputs = (logits,)
+        if labels is not None:
+            labels = [label[mask] for mask, label in zip(label_masks, labels)]
+            labels = pad_sequence(labels, batch_first=True, padding_value=-1)  # (b, local_max_len)
+            loss_fct = CrossEntropyLoss(ignore_index=-1, reduction='sum')
+            mask = labels != -1
+            loss = loss_fct(logits.view(-1, self.config.num_labels), labels.view(-1))
+            loss /= mask.float().sum()
+            outputs = (loss,) + outputs + (labels,)
+
+        return outputs  # (loss), scores, (hidden_states), (attentions)

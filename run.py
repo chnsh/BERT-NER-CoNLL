@@ -51,7 +51,7 @@ def train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs):
             optimizer.step()
             scheduler.step()
             model.zero_grad()
-            break
+
         # print train loss per epoch
         logger.info("Train loss: {}".format(tr_loss / nb_tr_steps))
         eval(eval_iter, model)

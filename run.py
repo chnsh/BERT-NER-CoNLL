@@ -208,3 +208,5 @@ if __name__ == '__main__':
         logger.info("--Starting test evaluation now!---")
         torch.save(model.state_dict(), 'model.torch')
         eval(test_iter, model)
+        logger.info("--Model coefficients--")
+        logger.info(model.coefficient_weights.data)

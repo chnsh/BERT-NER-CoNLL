@@ -1,8 +1,11 @@
+import math
+
 import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from torch.nn.utils.rnn import pad_sequence
 from transformers import BertForMaskedLM
+import torch.nn.functional as F
 
 
 class CoNLLClassifier(BertForMaskedLM):
@@ -21,9 +24,14 @@ class CoNLLClassifier(BertForMaskedLM):
 
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-        self.linear_combination_weights = nn.Linear(3, 1, bias=False)
+        self.linear_combination_weights = nn.Parameter(torch.Tensor(1, 2))
+        nn.init.kaiming_uniform_(self.linear_combination_weights, a=math.sqrt(5))
 
         self.init_weights()
+
+    @property
+    def coefficient_weights(self):
+        return F.softmax(self.linear_combination_weights, dim=0)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None,
                 position_ids=None, head_mask=None, labels=None, label_masks=None, masked_input_ids=None,
@@ -51,16 +59,16 @@ class CoNLLClassifier(BertForMaskedLM):
 
         token_logits = self.token_mlp(embeddings)  # (b, MAX_LEN, num_labels)
 
-        token_and_context = torch.cat((bert_sequence_reprs, embeddings), dim=-1)
+        # token_and_context = torch.cat((bert_sequence_reprs, embeddings), dim=-1)
+        #
+        # token_and_context_logits = self.token_and_context_mlp(token_and_context)
 
-        token_and_context_logits = self.token_and_context_mlp(token_and_context)
+        b, local_max_len, num_labels = token_logits.size()
 
-        b, local_max_len, num_labels = token_and_context_logits.size()
+        stacked_tensors = torch.stack((context_logits, token_logits))
 
-        stacked_tensors = torch.stack((context_logits, token_logits, token_and_context_logits))
-
-        # todo: check if this is right
-        logits = self.linear_combination_weights(stacked_tensors.view(3, -1).t()).view(b, local_max_len, num_labels)
+        logits = F.linear(stacked_tensors.view(2, -1).t(), self.coefficient_weights)
+        logits = logits.view(b, local_max_len, num_labels)
 
         outputs = (logits,)
         if labels is not None:

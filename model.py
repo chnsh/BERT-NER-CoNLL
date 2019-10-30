@@ -31,7 +31,7 @@ class CoNLLClassifier(BertForMaskedLM):
 
     @property
     def coefficient_weights(self):
-        return F.softmax(self.linear_combination_weights, dim=0)
+        return F.softmax(self.linear_combination_weights, dim=1)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None,
                 position_ids=None, head_mask=None, labels=None, label_masks=None, masked_input_ids=None,
@@ -69,6 +69,8 @@ class CoNLLClassifier(BertForMaskedLM):
 
         logits = F.linear(stacked_tensors.view(2, -1).t(), self.coefficient_weights)
         logits = logits.view(b, local_max_len, num_labels)
+
+        print(self.coefficient_weights.data)
 
         outputs = (logits,)
         if labels is not None:

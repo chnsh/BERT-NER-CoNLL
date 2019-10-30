@@ -30,6 +30,11 @@ def train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs):
             batch = tuple(t.to(device) for t in batch)
             b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks, b_masked_input_ids, \
             b_masked_lm_labels = batch
+
+            if b_label_masks.sum() == 0:
+                logger.warning("This training batch has no valid labels, skipping!")
+                continue
+
             # forward pass
             loss, logits, labels = model(b_input_ids, token_type_ids=b_token_type_ids,
                                          attention_mask=b_input_mask, labels=b_labels,
@@ -46,6 +51,7 @@ def train(train_iter, eval_iter, model, optimizer, scheduler, num_epochs):
             optimizer.step()
             scheduler.step()
             model.zero_grad()
+            break
         # print train loss per epoch
         logger.info("Train loss: {}".format(tr_loss / nb_tr_steps))
         eval(eval_iter, model)
@@ -63,11 +69,13 @@ def eval(iter_data, model):
         b_input_ids, b_labels, b_input_mask, b_token_type_ids, b_label_masks, b_masked_input_ids, \
         b_masked_lm_labels = batch
 
+        if b_label_masks.sum() == 0:
+            logger.warning("This eval batch has no valid labels, skipping!")
+            continue
+
         with torch.no_grad():
-            tmp_eval_loss, logits, reduced_labels = model(b_input_ids,
-                                                          token_type_ids=b_token_type_ids,
-                                                          attention_mask=b_input_mask,
-                                                          labels=b_labels,
+            tmp_eval_loss, logits, reduced_labels = model(b_input_ids, token_type_ids=b_token_type_ids,
+                                                          attention_mask=b_input_mask, labels=b_labels,
                                                           label_masks=b_label_masks,
                                                           masked_input_ids=b_masked_input_ids,
                                                           masked_lm_labels=b_masked_lm_labels)

@@ -70,8 +70,6 @@ class CoNLLClassifier(BertForMaskedLM):
         logits = F.linear(stacked_tensors.view(2, -1).t(), self.coefficient_weights)
         logits = logits.view(b, local_max_len, num_labels)
 
-        print(self.coefficient_weights.data)
-
         outputs = (logits,)
         if labels is not None:
             labels = [label[mask] for mask, label in zip(label_masks, labels)]

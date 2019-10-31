@@ -48,19 +48,19 @@ class CoNLLClassifier(BertForMaskedLM):
 
         sequence_output = outputs[0]  # (b, MAX_LEN, 768)
 
-        # bert_sequence_reprs = [embedding[mask] for mask, embedding in zip(label_masks, sequence_output)]
-        bert_sequence_reprs = []
-        for label_mask, embedding, input_masked in zip(label_masks, sequence_output, is_masked):
-            buffer = torch.zeros((int(label_mask.float().sum()), embedding.size(1)))
-            j = 0  # index into buffer tensor
-            for i, flag in enumerate(label_mask):
-                if flag:
-                    if input_masked[i]:
-                        buffer[j] = embedding[i]
-                    else:
-                        buffer[j] = torch.zeros_like(embedding[i])
-                    j += 1
-            bert_sequence_reprs.append(buffer)
+        bert_sequence_reprs = [embedding[mask] for mask, embedding in zip(label_masks, sequence_output)]
+        # bert_sequence_reprs = []
+        # for label_mask, embedding, input_masked in zip(label_masks, sequence_output, is_masked):
+        #     buffer = torch.zeros((int(label_mask.float().sum()), embedding.size(1)))
+        #     j = 0  # index into buffer tensor
+        #     for i, flag in enumerate(label_mask):
+        #         if flag:
+        #             if input_masked[i]:
+        #                 buffer[j] = embedding[i]
+        #             else:
+        #                 buffer[j] = torch.zeros_like(embedding[i])
+        #             j += 1
+        #     bert_sequence_reprs.append(buffer)
 
         bert_sequence_reprs = pad_sequence(sequences=bert_sequence_reprs, batch_first=True,
                                            padding_value=-1).to(device)  # (b, local_max_len, 768)

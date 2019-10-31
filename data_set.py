@@ -203,8 +203,6 @@ class NERDataSet(data.Dataset):
 
         masked_input_ids, masked_lm_labels = self.masked_lm_transform(input_ids, label_ids)
 
-        label_mask = masked_lm_labels != -1
-
         return input_ids, label_ids, attention_mask, sentence_id, label_mask, masked_input_ids, \
                masked_lm_labels
 

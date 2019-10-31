@@ -7,6 +7,8 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import BertForMaskedLM
 import torch.nn.functional as F
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 class CoNLLClassifier(BertForMaskedLM):
     def __init__(self, config, embedding_vocab_size, label_map, disentangled_labels=("B-PER", "I-PER"), dim_size=300):
@@ -56,7 +58,7 @@ class CoNLLClassifier(BertForMaskedLM):
                     if input_masked[i]:
                         buffer[j] = embedding[i]
                     else:
-                        buffer[j] = torch.zeros_like(embedding[i])
+                        buffer[j] = torch.zeros_like(embedding[i]).to(device)
                     j += 1
             bert_sequence_reprs.append(buffer)
 

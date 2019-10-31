@@ -58,12 +58,12 @@ class CoNLLClassifier(BertForMaskedLM):
                     if input_masked[i]:
                         buffer[j] = embedding[i]
                     else:
-                        buffer[j] = torch.zeros_like(embedding[i]).to(device)
+                        buffer[j] = torch.zeros_like(embedding[i])
                     j += 1
             bert_sequence_reprs.append(buffer)
 
         bert_sequence_reprs = pad_sequence(sequences=bert_sequence_reprs, batch_first=True,
-                                           padding_value=-1)  # (b, local_max_len, 768)
+                                           padding_value=-1).to(device)  # (b, local_max_len, 768)
 
         sequence_output = self.dropout(bert_sequence_reprs)
 

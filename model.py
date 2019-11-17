@@ -1,17 +1,18 @@
 import math
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from torch.nn.utils.rnn import pad_sequence
 from transformers import BertForMaskedLM
-import torch.nn.functional as F
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class CoNLLClassifier(BertForMaskedLM):
-    def __init__(self, config, embedding_vocab_size, label_map, disentangled_labels=("B-PER", "I-PER"), dim_size=300):
+    def __init__(self, config, embedding_vocab_size, label_map,
+                 disentangled_labels=("B-PER", "I-PER"), dim_size=300):
         super().__init__(config)
         self.config = config
         self.label_map = label_map
@@ -26,17 +27,18 @@ class CoNLLClassifier(BertForMaskedLM):
 
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-        self.linear_combination_weights = nn.Parameter(torch.Tensor(1, 2))
+        self.linear_combination_weights = nn.Parameter(torch.Tensor(2, 12))
         nn.init.kaiming_uniform_(self.linear_combination_weights, a=math.sqrt(5))
 
         self.init_weights()
 
     @property
     def coefficient_weights(self):
-        return F.softmax(self.linear_combination_weights, dim=1)
+        return F.softmax(self.linear_combination_weights, dim=0)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None,
-                position_ids=None, head_mask=None, labels=None, label_masks=None, masked_input_ids=None,
+                position_ids=None, head_mask=None, labels=None, label_masks=None,
+                masked_input_ids=None,
                 masked_lm_labels=None):
         outputs = self.bert(masked_input_ids,
                             attention_mask=attention_mask,
@@ -48,19 +50,8 @@ class CoNLLClassifier(BertForMaskedLM):
 
         sequence_output = outputs[0]  # (b, MAX_LEN, 768)
 
-        bert_sequence_reprs = [embedding[mask] for mask, embedding in zip(label_masks, sequence_output)]
-        # bert_sequence_reprs = []
-        # for label_mask, embedding, input_masked in zip(label_masks, sequence_output, is_masked):
-        #     buffer = torch.zeros((int(label_mask.float().sum()), embedding.size(1)))
-        #     j = 0  # index into buffer tensor
-        #     for i, flag in enumerate(label_mask):
-        #         if flag:
-        #             if input_masked[i]:
-        #                 buffer[j] = embedding[i]
-        #             else:
-        #                 buffer[j] = torch.zeros_like(embedding[i])
-        #             j += 1
-        #     bert_sequence_reprs.append(buffer)
+        bert_sequence_reprs = [embedding[mask] for mask, embedding in
+                               zip(label_masks, sequence_output)]
 
         bert_sequence_reprs = pad_sequence(sequences=bert_sequence_reprs, batch_first=True,
                                            padding_value=-1).to(device)  # (b, local_max_len, 768)
@@ -77,15 +68,15 @@ class CoNLLClassifier(BertForMaskedLM):
 
         token_logits = self.token_mlp(embeddings)  # (b, MAX_LEN, num_labels)
 
-        # token_and_context = torch.cat((bert_sequence_reprs, embeddings), dim=-1)
-        #
-        # token_and_context_logits = self.token_and_context_mlp(token_and_context)
-
         b, local_max_len, num_labels = token_logits.size()
 
         stacked_tensors = torch.stack((context_logits, token_logits))
 
-        logits = F.linear(stacked_tensors.view(2, -1).t(), self.coefficient_weights)
+        # broadcast multiply coefficients and stacked tensors to create logits and then sum across
+        # stack dimension
+
+        logits = stacked_tensors.view(2, 12, -1) * self.coefficient_weights.unsqueeze(-1)
+        logits = logits.sum(dim=0)
         logits = logits.view(b, local_max_len, num_labels)
 
         outputs = (logits,)

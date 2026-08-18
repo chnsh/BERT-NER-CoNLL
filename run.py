@@ -107,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--n_epochs", type=int, default=5)
-    parser.add_argument("--max_len", type=int, default=128)
+    parser.add_argument("--max_len", type=int, default=256)
     parser.add_argument("--pretrained_model_name", type=str, default="bert-base-cased")
     parser.add_argument("--train", dest="train", action="store_true")
     parser.add_argument("--existing_model_path", type=str, default=None)
@@ -131,13 +131,13 @@ if __name__ == '__main__':
         label_map[label] = i
 
     train_dataset = NERDataSet(data_list=train_examples, tokenizer=tokenizer, label_map=label_map,
-                               max_len=128)
+                               max_len=args.max_len)
 
     eval_dataset = NERDataSet(data_list=val_examples, tokenizer=tokenizer, label_map=label_map,
-                              max_len=128)
+                              max_len=args.max_len)
 
     test_dataset = NERDataSet(data_list=test_examples, tokenizer=tokenizer, label_map=label_map,
-                              max_len=128)
+                              max_len=args.max_len)
 
     train_iter = data.DataLoader(dataset=train_dataset,
                                  batch_size=args.batch_size,
